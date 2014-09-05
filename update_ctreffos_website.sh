@@ -3,7 +3,7 @@
 # Cloning CTreffOS Github repository and upload via ftp to CTreffOS website.
 #
 
-version="Dr. Peter Voigt - v1.0.0 / 2014-09-04"
+version="Dr. Peter Voigt - v1.0.1 / 2014-09-05"
 ctreffosGithubRepo="https://github.com/CTreffOS/ctreffos-webseite.git"
 # Adapt the following variables to your need.
 ftpHost=spock.drpetervoigt.private
@@ -14,6 +14,10 @@ ftpUser=tester
 ftpPasswdFile=/home/pvoigt/.ctreffos-webseite.passwd
 tmpDir=/tmp
 githubTmpDir=$tmpDir/ctreffos-webseite
+# Next line is optional, if you need SSL.
+useSSL=false
+# Next line is optional and needed only, if above line is useSSL=true.
+caCertBundle=/usr/local/etc/certs/pvoigt-ca-bundle.crt
 
 function printVersion
 {
@@ -39,11 +43,13 @@ function uploadToCtreffosWebsite
 {  
   echo "INFO: Uploading to CTreffOS website."
   lftp -d <<END_OF_SESSION
-  set ftp:ssl-allow false
+  set ftp:ssl-allow $useSSL
   set ssl:verify-certificate true
   set ftp:ssl-protect-data true
   set ftp:ssl-protect-list true
-  set ssl:ca-file /usr/local/etc/certs/pvoigt-ca-bundle.crt
+  if [ $useSSL ] ; then
+    set ssl:ca-file $caCertBundle
+  fi
   set ftp:passive-mode on
   set ftp:fix-pasv-address true
   open -p $ftpPort -u $ftpUser,$ftpPasswd $ftpHost
