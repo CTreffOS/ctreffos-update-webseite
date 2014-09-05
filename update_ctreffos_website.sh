@@ -3,7 +3,7 @@
 # Cloning CTreffOS Github repository and upload via ftp to CTreffOS website.
 #
 
-version="Dr. Peter Voigt - v1.0.1 / 2014-09-05"
+version="Dr. Peter Voigt - v1.1.0 / 2014-09-05"
 ctreffosGithubRepo="https://github.com/CTreffOS/ctreffos-webseite.git"
 # Adapt the following variables to your need.
 ftpHost=spock.drpetervoigt.private
@@ -16,7 +16,8 @@ tmpDir=/tmp
 githubTmpDir=$tmpDir/ctreffos-webseite
 # Next line is optional, if you need SSL.
 useSSL=false
-# Next line is optional and needed only, if above line is useSSL=true.
+# Next line is needed only, if above line is useSSL=true. Otherwise it
+# is ignored.
 caCertBundle=/usr/local/etc/certs/pvoigt-ca-bundle.crt
 
 function printVersion
@@ -25,11 +26,27 @@ function printVersion
   echo "INFO: Cloning CTreffOS Github repository and upload via ftp to ctreffos website."
 }
 
-
 function getFtpPasswd
 {
-  echo "INFO: Reading ftp password from file $ftpPasswdFile"
-  read ftpPasswd < $ftpPasswdFile
+  if [ -f $ftpPasswdFile ] ; then
+    echo "INFO: Reading ftp password from file $ftpPasswdFile."
+    read ftpPasswd < $ftpPasswdFile
+  else
+    echo "ERROR: Password file $ftpPasswdFile not found."
+    echo "ERROR: Program aborted."
+    exit 1
+  fi
+}
+
+function getSslParams
+{
+  if [ $useSSL ] ; then
+    echo "INFO: Using SSL secured FTP connection."
+    echo "INFO: Verifying FTP server certificate against $caCertBundle."
+  else
+    echo "INFO: Using non-SSL secured FTP connection."
+    caCertBundle=
+  fi
 }
 
 function cloneCtreffosGithubrepo
@@ -41,15 +58,13 @@ function cloneCtreffosGithubrepo
 
 function uploadToCtreffosWebsite
 {  
-  echo "INFO: Uploading to CTreffOS website."
+  echo "INFO: Uploading to CTreffOS website using FTP."
   lftp -d <<END_OF_SESSION
   set ftp:ssl-allow $useSSL
   set ssl:verify-certificate true
   set ftp:ssl-protect-data true
   set ftp:ssl-protect-list true
-  if [ $useSSL ] ; then
-    set ssl:ca-file $caCertBundle
-  fi
+  set ssl:ca-file $caCertBundle
   set ftp:passive-mode on
   set ftp:fix-pasv-address true
   open -p $ftpPort -u $ftpUser,$ftpPasswd $ftpHost
@@ -72,8 +87,9 @@ function removeTmpDir
 }
 
 printVersion
-cloneCtreffosGithubrepo
 getFtpPasswd
+getSslParams
+cloneCtreffosGithubrepo
 uploadToCtreffosWebsite
 removeTmpDir
 
